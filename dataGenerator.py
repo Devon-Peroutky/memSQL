@@ -166,23 +166,13 @@ def getParcels(i, previous=[]):
 
 
 def main(numDays):
-	'''
-	SCAN_ID                BIGINT NOT NULL,
-	SCAN_HASH              VARCHAR(11) NOT NULL,
-	SCAN_TYPE              VARCHAR(3),
-	SCAN_COUNT             INT,
-	MACHINE_TYPE           VARCHAR(10),
-	SEQUENCE_CODE          VARCHAR(5),
-	LOAD_DATE              TIMESTAMP,
-	PRIMARY KEY (SCAN_ID)
-    '''
 	# Declarations
 	scanNum=1
 	rollover=[]
 	scanEvent=0
 	i=0
 
-    # Initialize Database Controller
+	# Initialize Database Controller
 	sampleGenerator = DataGenerator()
 	sampleGenerator.open()
 

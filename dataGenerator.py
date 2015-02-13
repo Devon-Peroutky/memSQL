@@ -104,11 +104,6 @@ def getloadTimes(numDays):
 			loadTimes[day].append(datetime(dt.year, dt.month, dt.day, hours[i], minutes[i], seconds[i]))
 	return loadTimes
 
-def unix_time(dt):
-    epoch = datetime.utcfromtimestamp(0)
-    delta = dt - epoch
-    return delta.total_seconds()
-
 def getMachineType():
 	mtype = random.randint(1,5)
 

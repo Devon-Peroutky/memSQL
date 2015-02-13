@@ -26,8 +26,8 @@ class DataGenerator:
 	table = "SCANS"
 
 	# Constructor
-	def __init__(self, connection) :
-		self.connection = connection
+	def __init__(self) :
+		self.connection = dbConnector().getConnection()
 
 	def getCursor(self):
 		if(self.connection == None) :
@@ -145,8 +145,7 @@ def main(numDays):
 	i=0
 
 	# Initialize Database Controller
-	connection = dbConnector().getConnection()
-	sampleGenerator = DataGenerator(connection)
+	sampleGenerator = DataGenerator()
 
 	# Intitalize the LoadDates
 	days = getloadTimes(numDays)

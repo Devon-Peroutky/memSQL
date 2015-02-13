@@ -18,9 +18,6 @@ import random
 from dateutil import rrule
 from datetime import datetime, timedelta
 import sys
-import MySQLdb
-import mysql.connector
-from mysql.connector import errorcode
 from dbConnector import dbConnector
 
 class DataGenerator:

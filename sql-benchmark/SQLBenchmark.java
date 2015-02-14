@@ -152,10 +152,6 @@ public class SQLBenchmark {
         stmt = conn.createStatement();
         ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM SCANS");
         rs.next();
-        rowCount = rs.getInt(1);
-
-
-
     }
 
     private static int insert() throws Exception {
@@ -221,6 +217,34 @@ public class SQLBenchmark {
             iterations
         ); 
     }
+
+    private static int selectDistinct() throws Exception {
+        System.out.println("Benchmarking SELECT throughput");
+
+        // Declarations
+        String sql = "SELECT COUNT(DISTINCT SCAN_HASH) FROM SCANS";
+
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+
+        // Execute
+        for (int i=0; i<iterations; i++)
+            stmt.executeQuery(sql);
+
+        // Stop Timer
+        endTime = System.currentTimeMillis();
+
+        // Display Results
+        SQLBenchmark.printResult(
+            sql,
+            (endTime-startTime),
+            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
+            iterations
+        );
+        return iterations;
+    }
+
 
     private static int selects() throws Exception {
         System.out.println("Benchmarking SELECT throughput");
@@ -336,9 +360,10 @@ public class SQLBenchmark {
 
             // Benchmarks
 	    insert();
-	    selects();
-	    selectWhere("SCAN_ID=10000000");
-	    mixed();
+	    selectDistinct();
+	    //selects();
+	    //selectWhere("SCAN_ID=10000000");
+	    //mixed();
             /*
             simpleExec();
             preparedExec();

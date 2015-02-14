@@ -24,7 +24,7 @@ public class SQLBenchmark {
         System.out.println(
             name + ": " +
             (ms / 1000.0) + "s   \t " +
-            Math.round(1000.0 * i / ms) + " queries/second   \t"
+            Math.round(1000.0 * i / ms) + " queries/second   \t "
         );
     }
 
@@ -145,26 +145,100 @@ public class SQLBenchmark {
         );        
     }
 
-    // executeUpdate() for INSERT
-    // executeUpdate() for SELECT
-
     public static void insert(ArrayList<String> queries) throws Exception {
-        Statement stmt = conn.createStatement();
+        // Declarations
+        Statement stmt = null;
+        stmt = conn.createStatement();
+        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
+
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+
+        // Execute
         for (String query : queries) {
-            System.out.println(query);
             stmt.executeUpdate(query);
         }
+    
+        // Stop Timer
+        stmt.close();
+        endTime = System.currentTimeMillis();
+
+        // Display Output
+        SQLBenchmark.printResult(
+            "Insert",
+            (endTime-startTime),
+            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
+            queries.size()
+        );  
+
     }
 
-    public static void selects() throws Exception {
+    public static void selects(int iterations) throws Exception {
+        // Declarations
         String sql = "SELECT * FROM SCANS";
-        ResultSet rs = stmt.executeQuery(sql);
 
-        System.out.println("Inserts");
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+
+        // Execute
+        for (int i=0; i<iterations; i++) {
+            ResultSet rs = stmt.executeQuery(sql);
+        }
+
+        // Stop Timer
+        endTime = System.currentTimeMillis();
+
+        // Display Results
+        SQLBenchmark.printResult(
+            "SELECT * FROM SCANS",
+            (endTime-startTime),
+            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
+            iterations
+        );  
     }
 
-    public static void mixed() throws Exception {
-        System.out.println("Inserts");
+    public static void mixed(ArrayList<String> queries) throws Exception {
+        // Declarations
+        Statement stmt = null;
+        String select = "SELECT * FROM SCANS";
+        int n1 = queries.size()/4, n2 = queries.size()*2/4, n3 = queries.size()*3/4, n4 = queries.size();
+        stmt = conn.createStatement();
+        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
+
+
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+
+        /*
+            I know this section is ugly, but I didn't want any 
+            logic in the timed region to potentially distort the
+            Benchmark results
+        */
+        for (int i=0; i<n1; i++) stmt.executeUpdate(queries.get(i));
+        stmt.executeQuery(select);
+        for (int i=n1; i<n2; i++) stmt.executeUpdate(queries.get(i));
+        stmt.executeQuery(select);
+        for (int i=n2; i<n3; i++) stmt.executeUpdate(queries.get(i));
+        stmt.executeQuery(select);
+        for (int i=n3; i<n4; i++) stmt.executeUpdate(queries.get(i));
+        stmt.executeQuery(select);
+
+        // Stop Timer
+        endTime = System.currentTimeMillis();
+
+        // Display Results
+        // n4 = n inserts
+        // n4+n3+n2+n1 queries
+        SQLBenchmark.printResult(
+            "Mixed (40% Inserts, 60% SELECT * FROM SCANS)",
+            (endTime-startTime),
+            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
+            n4+n4+n3+n2+n1
+        );  
+
     }
 
     public static ArrayList<String> readQueries(String filename) throws Exception {
@@ -226,6 +300,9 @@ public class SQLBenchmark {
 
             // Benchmarks
             insert(queries);
+            selects(15);
+            mixed(queries);
+
             /*
             simpleExec();
             preparedExec();

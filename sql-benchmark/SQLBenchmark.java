@@ -149,18 +149,19 @@ public class SQLBenchmark {
 
     private static void insert(ArrayList<String> queries) throws Exception {
         // Declarations
-        Statement stmt = null;
-        stmt = conn.createStatement();
+        Statement stmt = conn.createStatement();
+	String loadFile = "LOAD DATA INFILE \'/home/ubuntu/code/memSQL/sql-benchmark/values.txt\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\' IGNORE 1 LINES;";
+
+	//LOAD DATA INFILE '/home/ubuntu/code/memSQL/sql-benchmark/values.txt' INTO TABLE SCANS FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 LINES;
         stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
+	System.out.println(loadFile);
 
         // Initialize Timer
         startTotalMem = runtime.totalMemory()-runtime.freeMemory();
         startTime = System.currentTimeMillis();
 
         // Execute
-        for (String query : queries) {
-            stmt.executeUpdate(query);
-        }
+        stmt.executeUpdate(loadFile);
     
         // Stop Timer
         stmt.close();
@@ -330,12 +331,13 @@ public class SQLBenchmark {
             stmt.setPoolable(true);
 
             // Benchmarks
+	    /*
 	    for (int i =0; i<3; i++) {
             	selects();
-	        //selectWhere("SCAN_ID=1000000");
+	        selectWhere("SCAN_ID=1000000");
 		iterations+=5;
-	    }
-	    //insert(queries);
+	    }*/
+	    insert(queries);
 	    //mixed(queries);
             /*
             simpleExec();

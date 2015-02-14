@@ -9,7 +9,37 @@ CREATE TABLE SCANS
     MACHINE_TYPE           VARCHAR(10),
     SEQUENCE_CODE          VARCHAR(5),
     LOAD_DATE              TIMESTAMP,
-    PRIMARY KEY (SCAN_ID)	
+    SHARD KEY (SCAN_HASH),
+    PRIMARY KEY (SCAN_ID, SCAN_HASH)	
+)
+
+-------------------------------------------------
+
+CREATE TABLE SCANS
+(
+    SCAN_ID                BIGINT NOT NULL,
+    SCAN_HASH              VARCHAR(11) NOT NULL,
+    SCAN_TYPE              VARCHAR(3),
+    SCAN_COUNT             INT,
+    MACHINE_TYPE           VARCHAR(10),
+    SEQUENCE_CODE          VARCHAR(5),
+    LOAD_DATE              TIMESTAMP,
+    PRIMARY KEY (SCAN_ID)    
+)
+
+-------------------------------------------------
+
+CREATE TABLE SCANS
+(
+    SCAN_ID                BIGINT NOT NULL,
+    SCAN_HASH              VARCHAR(11) NOT NULL,
+    SCAN_TYPE              VARCHAR(3),
+    SCAN_COUNT             INT,
+    MACHINE_TYPE           VARCHAR(10),
+    SEQUENCE_CODE          VARCHAR(5),
+    LOAD_DATE              TIMESTAMP,
+    SHARD KEY (SCAN_COUNT),
+    PRIMARY KEY (SCAN_ID, SCAN_COUNT)    
 )
 '''
 from collections import defaultdict
@@ -82,7 +112,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover, 50000000)
+			parcels, rollover = getParcels(i, rollover)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
@@ -104,6 +134,7 @@ class DataGenerator:
 						queries.append(query)
 				scanNum+=1
 			i+=1
+		print len(queries)
 		return queries
 
 

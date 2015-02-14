@@ -145,6 +145,17 @@ public class SQLBenchmark {
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
             500000
         );        
+    } 
+
+    private static void findMaxSize() throws Exception {
+	// Get number of records written
+        stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM SCANS");
+        rs.next();
+        rowCount = rs.getInt(1);
+
+
+
     }
 
     private static int insert() throws Exception {

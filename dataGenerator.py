@@ -108,7 +108,6 @@ class DataGenerator:
 						#query = '"{}"'.format('", "'.join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)]))
 						query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
 						#query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
-						print query
 						queries.append(query)
 				scanNum+=1
 			i+=1

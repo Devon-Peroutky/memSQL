@@ -9,9 +9,7 @@ CREATE TABLE SCANS
     MACHINE_TYPE           VARCHAR(10),
     SEQUENCE_CODE          VARCHAR(5),
     LOAD_DATE              TIMESTAMP,
-    PRIMARY KEY (SCAN_ID)
-
-	
+    PRIMARY KEY (SCAN_ID)	
 )
 '''
 from collections import defaultdict

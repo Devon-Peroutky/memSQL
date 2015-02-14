@@ -278,7 +278,7 @@ public class SQLBenchmark {
 
         // Connect to database
         try {
-            conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/memSQL?user=root&password=");
+            conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/MemEx?user=root&password=");
         } catch (SQLException ex) {
             if(conn != null) {
                 try {

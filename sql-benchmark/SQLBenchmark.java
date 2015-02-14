@@ -18,13 +18,15 @@ public class SQLBenchmark {
     private static PreparedStatement pStmt;
     private static int num;
     private static Connection conn = null;
+    private static int iterations = 5;
 
 
     private static void printResult(String name, long ms, long bytes, int i) {
         System.out.println(
-            name + ": " +
-            (ms / 1000.0) + "s   \t " +
-            Math.round(1000.0 * i / ms) + " queries/second   \t "
+                name + ": (" + iterations + ")\n\t\t" +
+                (ms / (1000.0*i)) + "seconds per Full-Table Scan \n\t\t" +
+                (bytes / 1000.0) + "MBs used \n\t\t" +
+                Math.round(1000.0 * i / ms) + " queries/second \n\t\t "
         );
     }
 
@@ -145,7 +147,7 @@ public class SQLBenchmark {
         );        
     }
 
-    public static void insert(ArrayList<String> queries) throws Exception {
+    private static void insert(ArrayList<String> queries) throws Exception {
         // Declarations
         Statement stmt = null;
         stmt = conn.createStatement();
@@ -174,7 +176,32 @@ public class SQLBenchmark {
 
     }
 
-    public static void selects(int iterations) throws Exception {
+    private static void selectWhere(String parameter, String operator, String value) {
+        // Declarations
+        String sql = "SELECT * FROM SCANS WHERE " + parameter + operator + value;
+
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+
+        // Execute
+        for (int i=0; i<iterations; i++) {
+            ResultSet rs = stmt.executeQuery(sql);
+        }
+
+        // Stop Timer
+        endTime = System.currentTimeMillis();
+
+        // Display Results
+        SQLBenchmark.printResult(
+            "SELECT * FROM SCANS WHERE ",
+            (endTime-startTime),
+            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
+            iterations
+        ); 
+    }
+
+    private static void selects() throws Exception {
         // Declarations
         String sql = "SELECT * FROM SCANS";
 
@@ -192,14 +219,14 @@ public class SQLBenchmark {
 
         // Display Results
         SQLBenchmark.printResult(
-            "SELECT * FROM SCANS",
+            sql,
             (endTime-startTime),
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
             iterations
         );  
     }
 
-    public static void mixed(ArrayList<String> queries) throws Exception {
+    private static void mixed(ArrayList<String> queries) throws Exception {
         // Declarations
         Statement stmt = null;
         String select = "SELECT * FROM SCANS";
@@ -241,7 +268,7 @@ public class SQLBenchmark {
 
     }
 
-    public static ArrayList<String> readQueries(String filename) throws Exception {
+    private static ArrayList<String> readQueries(String filename) throws Exception {
         ArrayList<String> result = new ArrayList<String>();
         BufferedReader br = new BufferedReader(new FileReader(filename));
         String line;
@@ -269,12 +296,13 @@ public class SQLBenchmark {
         }
 
         // Read Queries
+        /*
         try {
             queries = readQueries("queries.txt");
         } catch (Exception e) {
             System.out.println("Error reading in Queries from ./queries.txt");
             e.printStackTrace();
-        }
+        }*/
 
         // Connect to database
         try {

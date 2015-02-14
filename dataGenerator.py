@@ -82,7 +82,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover, 100)
+			parcels, rollover = getParcels(i, rollover, 5000000)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
@@ -98,14 +98,12 @@ class DataGenerator:
 						scanTime = scanTime + timedelta(seconds=3) 
 						scanEvent+=1
 
-						# Tracking
-						if (scanEvent%5000000) == 0:
-							print "ScanId: " + str(scanEvent)
+						if scanEvent==100000:
+							return queries
 
 						# Add to Query List 
-						#query = '"{}"'.format('", "'.join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)]))
-						query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
-						#query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						#query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
 						queries.append(query)
 				scanNum+=1
 			i+=1
@@ -210,8 +208,8 @@ def main(numDays):
 
 	# Write Queries to File
 	print "Writing the queries to FILE"
-	writeINFILE(queries)
-	#writeQueriesToFile(queries)
+	#writeINFILE(queries)
+	writeQueriesToFile(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

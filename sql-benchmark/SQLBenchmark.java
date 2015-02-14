@@ -13,7 +13,7 @@ public class SQLBenchmark {
     private static Statement stmt  = null;
     private static ResultSet rs    = null;
     private static Runtime runtime = Runtime.getRuntime();
-    private static long startTime, endTime;
+    private static long startTime, endTime, totalTime;
     private static long startTotalMem;
     private static PreparedStatement pStmt;
     private static int num;
@@ -147,37 +147,47 @@ public class SQLBenchmark {
         );        
     }
 
-    private static void insert(ArrayList<String> queries) throws Exception {
+    private static int insert() throws Exception {
+        System.out.println("Benchmarking INSERT throughput");
+
         // Declarations
-        Statement stmt = conn.createStatement();
+	int rowCount=0;
+        Statement stmt = null;
+	stmt = conn.createStatement();
 	String loadFile = "LOAD DATA INFILE \'/home/ubuntu/code/memSQL/sql-benchmark/values.txt\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\' IGNORE 1 LINES;";
 
-	//LOAD DATA INFILE '/home/ubuntu/code/memSQL/sql-benchmark/values.txt' INTO TABLE SCANS FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\n' IGNORE 1 LINES;
         stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
-	System.out.println(loadFile);
 
         // Initialize Timer
         startTotalMem = runtime.totalMemory()-runtime.freeMemory();
         startTime = System.currentTimeMillis();
 
         // Execute
-        stmt.executeUpdate(loadFile);
+	stmt.executeUpdate(loadFile);
     
         // Stop Timer
         stmt.close();
         endTime = System.currentTimeMillis();
+
+	// Get number of records written
+        stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM SCANS");
+	rs.next();
+	rowCount = rs.getInt(1);
 
         // Display Output
         SQLBenchmark.printResult(
             "Insert",
             (endTime-startTime),
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
-           queries.size() 
-        );  
-
+           rowCount 
+        ); 	 
+	return rowCount;
     }
 
     private static void selectWhere(String where) throws Exception{
+        System.out.println("Benchmarking SELECT WHERE throughput");
+
         // Declarations
         String sql = "SELECT * FROM SCANS WHERE " + where;
 
@@ -186,9 +196,8 @@ public class SQLBenchmark {
         startTime = System.currentTimeMillis();
 
         // Execute
-        for (int i=0; i<iterations; i++) {
-            ResultSet rs = stmt.executeQuery(sql);
-        }
+        for (int i=0; i<iterations; i++) 
+            stmt.executeQuery(sql);
 
         // Stop Timer
         endTime = System.currentTimeMillis();
@@ -202,7 +211,9 @@ public class SQLBenchmark {
         ); 
     }
 
-    private static void selects() throws Exception {
+    private static int selects() throws Exception {
+        System.out.println("Benchmarking SELECT throughput");
+
         // Declarations
         String sql = "SELECT * FROM SCANS";
 
@@ -211,9 +222,8 @@ public class SQLBenchmark {
         startTime = System.currentTimeMillis();
 
         // Execute
-        for (int i=0; i<iterations; i++) {
-            ResultSet rs = stmt.executeQuery(sql);
-        }
+        for (int i=0; i<iterations; i++) 
+            stmt.executeQuery(sql);
 
         // Stop Timer
         endTime = System.currentTimeMillis();
@@ -224,52 +234,46 @@ public class SQLBenchmark {
             (endTime-startTime),
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
 	    iterations            
-        );  
+        ); 
+	return iterations; 
     }
 
-    private static void mixed(ArrayList<String> queries) throws Exception {
+    private static void mixed() throws Exception {
+	System.out.println("Benchmarking MIXED throughput");
+
         // Declarations
+	int transactions=0;
+	totalTime=0;
+	
         Statement stmt = null;
-        String select = "SELECT * FROM SCANS";
-        int n1 = queries.size()/4, n2 = queries.size()*2/4, n3 = queries.size()*3/4, n4 = queries.size(), n=queries.size()/10;
         stmt = conn.createStatement();
-        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
+	// DELETE, INSERT, SELECT
+	for(int i=0; i<iterations; i++) {
+		// DELETE all entries
+	        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
-        // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
+	        // Initialize Timer
+        	startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+	        startTime = System.currentTimeMillis();
 
-        /*
-            I know this section is ugly, but I didn't want any 
-            logic in the timed region to potentially distort the
-            Benchmark results
-        */
-        for (int i=0; i<n1; i++) stmt.executeUpdate(queries.get(i));
-        System.out.println("Here");
-	for (int i=0; i<n; i++) stmt.executeQuery(select);
-        System.out.println("Here");
-        for (int i=n1; i<n; i++) stmt.executeUpdate(queries.get(i));
-        System.out.println("Here");
-        for (int i=0; i<n; i++) stmt.executeQuery(select);
-        System.out.println("Here");
-        for (int i=n2; i<n; i++) stmt.executeUpdate(queries.get(i));
-        System.out.println("Here");
-        for (int i=0; i<n; i++) stmt.executeQuery(select);
-        System.out.println("Here");
-        for (int i=n3; i<n4; i++) stmt.executeUpdate(queries.get(i));
+		// INSERT & Query		
+		transactions+=insert();
+		transactions+=selects();
 
-        // Stop Timer
-        endTime = System.currentTimeMillis();
+	        // Stop Timer
+        	endTime = System.currentTimeMillis();
+		totalTime+=endTime-startTime;	
+	}
 
         // Display Results
         // n4 = n inserts
         // n4+n3+n2+n1 queries
         SQLBenchmark.printResult(
             "Mixed",
-            (endTime-startTime),
+            totalTime,
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
-            n4+(3*n)
+            transactions
         );  
     }
 
@@ -288,24 +292,13 @@ public class SQLBenchmark {
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
-        // Declarations
-        ArrayList<String> queries = null;
-
+	public static void main(String[] args) {
         // Initialize JDBC connector
         try {
             Class.forName("com.mysql.jdbc.Driver");
             Class.forName("com.mysql.jdbc.Driver").newInstance();
         } catch (Exception ex) {
             System.err.println("Loading MySQL-Driver failed!");
-        }
-
-        // Read Queries
-        try {
-            queries = readQueries("queries.txt");
-        } catch (Exception e) {
-            System.out.println("Error reading in Queries from ./queries.txt");
-            e.printStackTrace();
         }
 
         // Connect to database
@@ -331,14 +324,10 @@ public class SQLBenchmark {
             stmt.setPoolable(true);
 
             // Benchmarks
-	    /*
-	    for (int i =0; i<3; i++) {
-            	selects();
-	        selectWhere("SCAN_ID=1000000");
-		iterations+=5;
-	    }*/
-	    insert(queries);
-	    //mixed(queries);
+	    insert();
+	    selects();
+	    selectWhere("SCAN_ID=10000000");
+	    mixed();
             /*
             simpleExec();
             preparedExec();
@@ -378,5 +367,5 @@ public class SQLBenchmark {
                 conn = null;
             }
         }
-    }
+    }   
 }

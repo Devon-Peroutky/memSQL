@@ -82,7 +82,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover, 1000000)
+			parcels, rollover = getParcels(i, rollover, 50000000)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
@@ -97,9 +97,6 @@ class DataGenerator:
 						# Update
 						scanTime = scanTime + timedelta(seconds=3) 
 						scanEvent+=1
-
-						if scanEvent==100000:
-							return queries
 
 						# Add to Query List 
 						query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])

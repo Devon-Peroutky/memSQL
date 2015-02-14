@@ -10,6 +10,8 @@ CREATE TABLE SCANS
     SEQUENCE_CODE          VARCHAR(5),
     LOAD_DATE              TIMESTAMP,
     PRIMARY KEY (SCAN_ID)
+
+	
 )
 '''
 from collections import defaultdict
@@ -82,15 +84,15 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover)
+			parcels, rollover = getParcels(i, rollover, 100)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
 				scanTime = scan
-                                scanType = getScanType()
-                                machineType = getMachineType()
-                                sequenceCode = getSequenceCode()
-                                scanCount = scanNum
+				scanType = getScanType()
+				machineType = getMachineType()
+				sequenceCode = getSequenceCode()
+				scanCount = scanNum
 
 				for parcelID in parcels:		
 					if scanNum>=parcels[parcelID][0] and scanNum<=parcels[parcelID][1]:
@@ -103,7 +105,10 @@ class DataGenerator:
 							print "ScanId: " + str(scanEvent)
 
 						# Add to Query List 
-						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						#query = '"{}"'.format('", "'.join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)]))
+						query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						#query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						print query
 						queries.append(query)
 				scanNum+=1
 			i+=1
@@ -180,8 +185,15 @@ def getParcels(i, previous=[], number=50000000):
 			keep.append(i)
 	return parcels, keep
 
+def writeINFILE(queries):
+	file = open('sql-benchmark/values.txt', 'w+')
+	file.write("SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE")
+	for query in queries:
+		file.write(query)
+		file.write("\n")
+
 def writeQueriesToFile(queries):
-	file = open('sql-benchmark/java/queries.txt', 'w+')
+	file = open('sql-benchmark/queries.txt', 'w+')
 	for query in queries:
 		file.write(query)
 		file.write("\n")
@@ -197,11 +209,12 @@ def main(numDays):
 
 	# Execute INSERT commands
 	print "Inserting into MemSQL"
-	sampleGenerator.executeInserts(queries)
+	#sampleGenerator.executeInserts(queries)
 
 	# Write Queries to File
 	print "Writing the queries to FILE"
-	writeQueriesToFile(queries)
+	writeINFILE(queries)
+	#writeQueriesToFile(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

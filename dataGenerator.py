@@ -112,7 +112,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover)
+			parcels, rollover = getParcels(i, rollover, 20000000)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:

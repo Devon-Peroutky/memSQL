@@ -18,7 +18,7 @@ public class SQLBenchmark {
     private static PreparedStatement pStmt;
     private static int num;
     private static Connection conn = null;
-    private static int iterations = 5;
+    private static int iterations = 3;
     private static int total = 6801076;
 
     private static void printResult(String name, long ms, long bytes, int i) {
@@ -161,7 +161,7 @@ public class SQLBenchmark {
 	int rowCount=0;
         Statement stmt = null;
 	stmt = conn.createStatement();
-	String loadFile = "LOAD DATA INFILE \'/home/ubuntu/code/memSQL/sql-benchmark/values.txt\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\' IGNORE 1 LINES;";
+	String loadFile = "LOAD DATA INFILE \'/home/ubuntu/code/memSQL/sql-benchmark/queries.txt\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\';";
 
         stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
@@ -218,11 +218,11 @@ public class SQLBenchmark {
         ); 
     }
 
-    private static int selectDistinct() throws Exception {
+    private static int selectDistinct(String parameter) throws Exception {
         System.out.println("Benchmarking SELECT throughput");
 
         // Declarations
-        String sql = "SELECT COUNT(DISTINCT SCAN_HASH) FROM SCANS";
+        String sql = "SELECT COUNT(DISTINCT "+parameter+") FROM SCANS";
 
         // Initialize Timer
         startTotalMem = runtime.totalMemory()-runtime.freeMemory();
@@ -360,11 +360,18 @@ public class SQLBenchmark {
 
             // Benchmarks
 	    insert();
-	    selectDistinct();
-	    //selects();
-	    //selectWhere("SCAN_ID=10000000");
-	    //mixed();
-            /*
+	    selectDistinct("SCAN_HASH");
+            selectDistinct("SCAN_ID");
+	    selects();
+	    selectWhere("SCAN_HASH=1000000");
+	    selectWhere("SCAN_ID=1000000");
+            selectWhere("SCAN_HASH=25000000");
+            selectWhere("SCAN_ID=25000000");
+            selectWhere("SCAN_HASH=40000000");
+            selectWhere("SCAN_ID=40000000");
+
+	    mixed();
+	    /*
             simpleExec();
             preparedExec();
             simpleRowQuery();

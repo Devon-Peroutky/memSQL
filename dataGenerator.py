@@ -62,10 +62,10 @@ class DataGenerator:
 	def buildInsert(self, values):
 		queries = []
 		query = "INSERT INTO " + self.table + " (SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE) VALUES ("+values[0]+", \'" + values[1]+"\', \'" + values[2] +"\', " + values[3] +", \'" + values[4] +"\', \'" + values[5] +"\', \'" + values[6] + "\')"
-		print query
 		return query
 
 	def executeInserts(self, queries):
+		print "Executing Inserts..."
 		for query in queries:
 			self.insert(query)
 
@@ -87,33 +87,33 @@ class DataGenerator:
 			scanNum=1
 			for scan in scans:
 				scanTime = scan
+                                scanType = getScanType()
+                                machineType = getMachineType()
+                                sequenceCode = getSequenceCode()
+                                scanCount = scanNum
+
 				for parcelID in parcels:		
 					if scanNum>=parcels[parcelID][0] and scanNum<=parcels[parcelID][1]:
-						scanID = scanEvent
-						scanHash = parcelID
-						scanType = getScanType()
-						scanCount = scanNum
-						machineType = getMachineType()
-						sequenceCode = getSequenceCode()
-						loadDate = scanTime
-
 						# Update
 						scanTime = scanTime + timedelta(seconds=3) 
 						scanEvent+=1
 
-						# Insert into Database
-						query = self.buildInsert([str(scanID), str(scanHash), scanType, str(scanCount), machineType, sequenceCode, str(loadDate)])
+						# Tracking
+						if (scanEvent%5000000) == 0:
+							print "ScanId: " + str(scanID)
+
+						# Add to Query List 
+						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
 						queries.append(query)
 				scanNum+=1
 			i+=1
-
 		return queries
 
 
 def getloadTimes(numDays):
 	loadTimes = defaultdict(list)
 	now = datetime.now()
-	then = now + timedelta(days=numDays)
+	then = now + timedelta(days=numDays-1)
 
 	for dt in rrule.rrule(rrule.DAILY, dtstart=now, until=then):
 		day = dt.day
@@ -159,9 +159,9 @@ def getSequenceCode():
 	else:
 		return "000"
 
-def getParcels(i, previous=[]):
-	low = (100*i)+len(previous)
-	high = 100*(i+1)
+def getParcels(i, previous=[], number=50000000):
+	low = (number*i)+len(previous)
+	high = number*(i+1)
 	keep=[]
 	parcels={}
 
@@ -191,16 +191,17 @@ def main(numDays):
 	print "Logging in..."
 	sampleGenerator = DataGenerator()
 
-	print "Logged in correctly?"
-
 	# Load list of all the Inserts
+	print "Generating the Queries"
 	queries = sampleGenerator.loadQueries(numDays)	
 
 	# Execute INSERT commands
+	print "Inserting into MemSQL"
 	sampleGenerator.executeInserts(queries)
 
 	# Write Queries to File
-	#writeQueriesToFile(queries)
+	print "Writing the queries to FILE"
+	writeQueriesToFile(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

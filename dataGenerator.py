@@ -47,8 +47,7 @@ class DataGenerator:
 		else:
 			print("Cursor is 'None'")
 
-	def insert(self, values):
-		query = "INSERT INTO " + self.table + " (SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE) VALUES ("+values[0]+", \'" + values[1]+"\', \'" + values[2] +"\', " + values[3] +", \'" + values[4] +"\', \'" + values[5] +"\', \'" + values[6] + "\')"
+	def insert(self, query):
 		self.getCursor()
 		if(self.cursor==None):
 			print "Cursor is None"
@@ -60,11 +59,56 @@ class DataGenerator:
 			except:
 				print "Failed to execute: \'" + str(query) + "\';"
 
+	def buildInsert(self, values):
+		queries = []
+		query = "INSERT INTO " + self.table + " (SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE) VALUES ("+values[0]+", \'" + values[1]+"\', \'" + values[2] +"\', " + values[3] +", \'" + values[4] +"\', \'" + values[5] +"\', \'" + values[6] + "\')"
+		print query
+		return query
 
-	##  BEGIN close connection
-	def close(self) :
-		self.cursor.close()
-		self.connection.close()
+	def executeInserts(self, queries):
+		for query in queries:
+			self.insert(query)
+
+	def loadQueries(self, numDays):
+		# Declarations
+		scanNum=1
+		rollover=[]
+		scanEvent=0
+		i=0
+		queries=[]
+
+		# Intitalize the LoadDates
+		days = getloadTimes(numDays)
+
+		# Initialize parcels
+		for day in days:
+			parcels, rollover = getParcels(i, rollover)
+			scans = days[day]
+			scanNum=1
+			for scan in scans:
+				scanTime = scan
+				for parcelID in parcels:		
+					if scanNum>=parcels[parcelID][0] and scanNum<=parcels[parcelID][1]:
+						scanID = scanEvent
+						scanHash = parcelID
+						scanType = getScanType()
+						scanCount = scanNum
+						machineType = getMachineType()
+						sequenceCode = getSequenceCode()
+						loadDate = scanTime
+
+						# Update
+						scanTime = scanTime + timedelta(seconds=3) 
+						scanEvent+=1
+
+						# Insert into Database
+						query = self.buildInsert([str(scanID), str(scanHash), scanType, str(scanCount), machineType, sequenceCode, str(loadDate)])
+						queries.append(query)
+				scanNum+=1
+			i+=1
+
+		return queries
+
 
 def getloadTimes(numDays):
 	loadTimes = defaultdict(list)
@@ -136,45 +180,24 @@ def getParcels(i, previous=[]):
 			keep.append(i)
 	return parcels, keep
 
+def writeQueriesToFile(queries):
+	file = open('queries.txt', 'w+')
+	for query in queries:
+		file.write(query)
+		file.write("\n")
 
 def main(numDays):
-	# Declarations
-	scanNum=1
-	rollover=[]
-	scanEvent=0
-	i=0
-
 	# Initialize Database Controller
 	sampleGenerator = DataGenerator()
 
-	# Intitalize the LoadDates
-	days = getloadTimes(numDays)
+	# Load list of all the Inserts
+	queries = sampleGenerator.loadQueries(numDays)	
 
-	# Initialize parcels
-	for day in days:
-		parcels, rollover = getParcels(i, rollover)
-		scans = days[day]
-		scanNum=1
-		for scan in scans:
-			scanTime = scan
-			for parcelID in parcels:		
-				if scanNum>=parcels[parcelID][0] and scanNum<=parcels[parcelID][1]:
-					scanID = scanEvent
-					scanHash = parcelID
-					scanType = getScanType()
-					scanCount = scanNum
-					machineType = getMachineType()
-					sequenceCode = getSequenceCode()
-					loadDate = scanTime
+	# Execute INSERT commands
+	sampleGenerator.executeInserts(queries)
 
-					# Update
-					scanTime = scanTime + timedelta(seconds=3) 
-					scanEvent+=1
-
-					# Insert into Database
-					sampleGenerator.insert([str(scanID), str(scanHash), scanType, str(scanCount), machineType, sequenceCode, str(loadDate)])
-			scanNum+=1
-		i+=1
+	# Write Queries to File
+	writeQueriesToFile(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

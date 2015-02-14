@@ -27,7 +27,7 @@ class DataGenerator:
 
 	# Constructor
 	def __init__(self) :
-		self.connection = dbConnector().getConnection()
+		self.connection, self.cursor = dbConnector().getConnection()
 
 	def getCursor(self):
 		if(self.connection == None) :
@@ -188,7 +188,10 @@ def writeQueriesToFile(queries):
 
 def main(numDays):
 	# Initialize Database Controller
+	print "Logging in..."
 	sampleGenerator = DataGenerator()
+
+	print "Logged in correctly?"
 
 	# Load list of all the Inserts
 	queries = sampleGenerator.loadQueries(numDays)	
@@ -197,7 +200,7 @@ def main(numDays):
 	sampleGenerator.executeInserts(queries)
 
 	# Write Queries to File
-	writeQueriesToFile(queries)
+	#writeQueriesToFile(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

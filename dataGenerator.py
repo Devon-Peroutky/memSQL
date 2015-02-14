@@ -181,7 +181,7 @@ def getParcels(i, previous=[]):
 	return parcels, keep
 
 def writeQueriesToFile(queries):
-	file = open('queries.txt', 'w+')
+	file = open('sql-benchmark/java/queries.txt', 'w+')
 	for query in queries:
 		file.write(query)
 		file.write("\n")

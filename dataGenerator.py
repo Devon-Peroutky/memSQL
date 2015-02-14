@@ -100,7 +100,7 @@ class DataGenerator:
 
 						# Tracking
 						if (scanEvent%5000000) == 0:
-							print "ScanId: " + str(scanID)
+							print "ScanId: " + str(scanEvent)
 
 						# Add to Query List 
 						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])

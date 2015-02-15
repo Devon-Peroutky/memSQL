@@ -112,7 +112,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover, 20000000)
+			parcels, rollover = getParcels(i, rollover, 25000)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
@@ -129,8 +129,8 @@ class DataGenerator:
 						scanEvent+=1
 
 						# Add to Query List 
-						query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
-						#query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						#query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
+						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
 						queries.append(query)
 				scanNum+=1
 			i+=1

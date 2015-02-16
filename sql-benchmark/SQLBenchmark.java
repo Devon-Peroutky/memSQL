@@ -18,7 +18,7 @@ public class SQLBenchmark {
     private static PreparedStatement pStmt;
     private static int num;
     public static Connection conn = null;
-    private static int iterations = 15;
+    private static int iterations = 1;
     private static String localValuesPath = "/home/ubuntu/workspace/Interviews/src/memSQL/sql-benchmark/values.txt";
     private static String clusterValuesPath = "/home/ubuntu/code/src/memSQL/sql-benchmark/values.txt";
 
@@ -33,6 +33,7 @@ public class SQLBenchmark {
 
     // This is a Bulk insert using LOAD DATA INFILE, to see a 'manuel' INSERT, look in dataGenerator.py
     public static int insert() throws Exception {
+        System.out.println("INSERTING....");
         // Declarations
         int rowCount=0;
         Statement stmt = null;
@@ -145,15 +146,16 @@ public class SQLBenchmark {
         // Declarations
     	int transactions=0;
     	totalTime=0;
-	
+
         Statement stmt = null;
         stmt = conn.createStatement();
+
+        SQLThread t1 = new SQLThread("insert");
+        SQLThread t2 = new SQLThread("select");
 
         // DELETE, INSERT, SELECT
         for(int i=0; i<iterations; i++) {
             // Create threads that will run simultaneously
-            SQLThread t1 = new SQLThread("insert");
-            SQLThread t2 = new SQLThread("select");
 
             // DELETE all entries
 	        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");

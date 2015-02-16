@@ -12,33 +12,36 @@ class SQLThread implements Runnable {
   public int transactions;
 
   public SQLThread( String type ){
-
       s = new SQLBenchmark();
       query = type.toLowerCase();
+      System.out.println("Creating a thread to " + query);
   }
 
   public void run(){
-    if (query.equals("insert"))
+    if (query.equals("insert")) {
       try {
         transactions = s.insert();
       } catch (Exception e) {
-        System.out.println("Error");
+        System.out.println("Thread " +  query + " exiting w/ERROR.");
+        return;
       }
-    else
+    }
+    else {
       try {
-        transactions = s.selects();
+        transactions = s.select();
       } catch (Exception e) {
-        System.out.println("Error");
+        System.out.println("Thread " +  query + " exiting w/ERROR.");
+        return;
       }
-     
-    System.out.println("Thread " +  query + " exiting.");
+    }
+    System.out.println("Thread " +  query + " exiting SUCCESSFULLY.");
   }
 
   public void start () {
     System.out.println("Starting " +  query );
     if (t == null) {
        t = new Thread (this, query);
-       t.start ();
+       t.start();
     }
   }
 }

@@ -163,23 +163,23 @@ public class SQLBenchmark {
 
         // DELETE, INSERT, SELECT
         for(int i=0; i<iterations; i++) {
-            // Create threads that will run simultaneously
+            	// Create threads that will run simultaneously
 
-            // DELETE all entries
-	        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
+            	// DELETE all entries
+		stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
-	        // Initialize Timer
-            startTimer();
+		// Initialize Timer
+        	startTimer();
 
     		// Start the INSERT and QUERY thread
     		t1.start();
-            t2.start();
+            	t2.start();
 
 	        // Stop Timer
         	endTimer();
-            totalTime+=endTime-startTime;	
-            transactions+=t1.transactions;
-            transactions+=t2.transactions;
+            	totalTime+=endTime-startTime;	
+            	transactions+=t1.transactions;
+            	transactions+=t2.transactions;
         }
 
         // Display Results
@@ -223,15 +223,11 @@ public class SQLBenchmark {
         }
     }
 
-    /**
-     * @param args the command line arguments
-     */
 	public static void main(String[] args) {
 
         // Connect to database
         conn = DBConn.getInstance().getConnection();
 
-        
         try {
             stmt = conn.createStatement();
             stmt.setPoolable(true);

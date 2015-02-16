@@ -33,7 +33,6 @@ class DataGenerator:
 			print("Cursor is 'None'")
 
 	def insert(self, query):
-		print "INSERTING.................................."
 		if(self.cursor==None):
 			print "Cursor is None"
 		else:

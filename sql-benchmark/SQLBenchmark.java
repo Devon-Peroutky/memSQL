@@ -52,7 +52,6 @@ public class SQLBenchmark {
 
     // This is a Bulk insert using LOAD DATA INFILE, to see a 'manuel' INSERT, look in dataGenerator.py
     public static int insert() throws Exception {
-        System.out.println("INSERTING....");
         // Declarations
         int rowCount=0;
         Statement stmt = null;
@@ -127,14 +126,15 @@ public class SQLBenchmark {
 
     public static int select() throws Exception {
         // Declarations
-        String sql = "SELECT * FROM SCANS";
+        String sql = "SELECT COUNT(*) FROM SCANS";
 
         // Initialize Timer
         startTimer();
 
         // Execute
-        for (int i=0; i<iterations; i++) 
+        for (int i=0; i<iterations; i++) {
             stmt.executeQuery(sql);
+        }
 
         // Stop Timer
         endTimer();
@@ -144,18 +144,19 @@ public class SQLBenchmark {
             sql,
             (endTime-startTime),
             (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
-	    iterations            
+	       iterations            
         ); 
 	   return iterations; 
     }
 
+    // I realize now that for this to be a true test of concurrency, I would
+    // need to have the insert method that is being called in t1.start() be a
+    // series of INSERT queries, rather than a LOCAL DATA INFILE. I just realized
+    // this too late.
     private static void mixed() throws Exception {
         // Declarations
     	int transactions=0;
     	totalTime=0;
-
-        Statement stmt = null;
-        stmt = conn.createStatement();
 
         SQLThread t1 = new SQLThread("insert");
         SQLThread t2 = new SQLThread("select");
@@ -230,22 +231,25 @@ public class SQLBenchmark {
         // Connect to database
         conn = DBConn.getInstance().getConnection();
 
-        // Run the BenchMarks here
+        
         try {
             stmt = conn.createStatement();
             stmt.setPoolable(true);
-
+            insert();
+        } catch (Exception e) {
+            System.out.println("Error inserting, probably inserting a unique key that already exists.");
+        }
+        try {
             // Benchmarks
-            //insert();
     	    selectDistinct("SCAN_HASH");
             selectDistinct("SCAN_ID");
-    	    select();
     	    selectWhere("SCAN_HASH=1000000");
     	    selectWhere("SCAN_ID=1000000");
             selectWhere("SCAN_HASH<25000000");
             selectWhere("SCAN_ID<25000000");
             selectWhere("SCAN_HASH>40000000");
             selectWhere("SCAN_ID>40000000");
+            select();
     	    mixed();
         } catch (Exception e) {
             System.out.println("Error w/Benchmarks");

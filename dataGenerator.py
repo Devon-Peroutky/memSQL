@@ -11,22 +11,20 @@ class DataGenerator:
 	cursor = None
 	connection = None
 	table = "SCANS"
+	query = ""
+	queryList = []
+	insertHeader = "INSERT INTO " + table + " (SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE) VALUES "
 
 	# Constructor
 	def __init__(self) :
-		self.connection, self.cursor = dbConnector().getConnection()
-
-	def getCursor(self):
-		if(self.connection == None) :
-			print("Connection is None")
-			return
-		self.cursor = self.connection.cursor()
+		connector = dbConnector()
+		self.connection, self.cursor = connector.getConnection()
+		self.table = connector.table
 
 	# BEGIN execute
 	def select(self, *arg):
 		columns = "*" if len(arg) is 0 else ','.join(str(i) for i in arg)
 		query = "SELECT " + columns + " FROM " + self.table
-		self.getCursor()
 		if(self.cursor!=None) :
 			self.cursor.execute(query)
 			for row in self.cursor.fetchall() :
@@ -35,26 +33,23 @@ class DataGenerator:
 			print("Cursor is 'None'")
 
 	def insert(self, query):
-		self.getCursor()
+		print "INSERTING.................................."
 		if(self.cursor==None):
 			print "Cursor is None"
-			return
 		else:
 			try:		
 				self.cursor.execute(query)
-				self.connection.commit()
 			except:
-				print "Failed to execute: \'" + str(query) + "\';"
+				print "Failed to execute insert: "#\'" + str(query) + "\';"
 
-	def buildInsert(self, values):
-		queries = []
-		query = "INSERT INTO " + self.table + " (SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE) VALUES ("+values[0]+", \'" + values[1]+"\', \'" + values[2] +"\', " + values[3] +", \'" + values[4] +"\', \'" + values[5] +"\', \'" + values[6] + "\')"
-		return query
+	def buildGroupInsert(self, values):	
+		# Ugly, but I don't see how to use a list comprehension we some columns need to be enclosed by '' and others don't	
+		query = values[0]+", \'" + values[1]+"\', \'" + values[2] +"\', " + values[3] +", \'" + values[4] +"\', \'" + values[5] +"\', \'" + values[6] + "\'"
+		self.queryList.append("(" + query + ")")
 
-	def executeInserts(self, queries):
-		print "Executing Inserts..."
-		for query in queries:
-			self.insert(query)
+	def finalizeGroupInsert(self):
+		query = ','.join(self.queryList)
+		return ''.join([self.insertHeader,query])
 
 	def loadQueries(self, numDays):
 		# Declarations
@@ -69,7 +64,7 @@ class DataGenerator:
 
 		# Initialize parcels
 		for day in days:
-			parcels, rollover = getParcels(i, rollover)
+			parcels, rollover = getParcels(i, rollover, 100)
 			scans = days[day]
 			scanNum=1
 			for scan in scans:
@@ -86,13 +81,12 @@ class DataGenerator:
 						scanEvent+=1
 
 						# Add to Query List 
-						#query = ",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
-						query = self.buildInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
-						queries.append(query)
+						queries.append(",".join([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)]))
+						self.buildGroupInsert([str(scanEvent), str(parcelID), scanType, str(scanCount), machineType, sequenceCode, str(scanTime)])
 				scanNum+=1
 			i+=1
-		print len(queries)
-		return queries
+		print scanEvent
+		return self.finalizeGroupInsert(), queries
 
 
 def getloadTimes(numDays):
@@ -167,34 +161,33 @@ def getParcels(i, previous=[], number=50000000):
 
 def writeINFILE(queries):
 	file = open('sql-benchmark/values.txt', 'w+')
-	file.write("SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE")
+	file.write("SCAN_ID, SCAN_HASH, SCAN_TYPE, SCAN_COUNT, MACHINE_TYPE, SEQUENCE_CODE, LOAD_DATE\n")
 	for query in queries:
 		file.write(query)
 		file.write("\n")
 
-def writeQueriesToFile(queries):
-	file = open('sql-benchmark/queries.txt', 'w+')
-	for query in queries:
+# DEPRECIATED
+def writeQueryToFile(query):
+	try:
+		file = open('sql-benchmark/queries.txt', 'w+')
 		file.write(query)
 		file.write("\n")
+		file.close()
+	except:
+		print "Error Opening/Writing to the sql-benchmark/queries.txt"
 
 def main(numDays):
 	# Initialize Database Controller
-	print "Logging in..."
 	sampleGenerator = DataGenerator()
 
 	# Load list of all the Inserts
-	print "Generating the Queries"
-	queries = sampleGenerator.loadQueries(numDays)	
+	groupInsert, queries = sampleGenerator.loadQueries(numDays)	
 
-	# Execute INSERT commands
-	print "Inserting into MemSQL"
-	#sampleGenerator.executeInserts(queries)
+	# Insert the groupInsert into the Database
+	sampleGenerator.insert(groupInsert)
 
-	# Write Queries to File
-	print "Writing the queries to FILE"
-	#writeINFILE(queries)
-	writeQueriesToFile(queries)
+	# Write Values to File that can be used for LOAD DATA INFILE
+	writeINFILE(queries)
 
 if __name__ == '__main__':
 	if len(sys.argv) is 1:

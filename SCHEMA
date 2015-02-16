@@ -1,0 +1,45 @@
+# Given/Standard SCHEMA
+CREATE TABLE SCANS
+(
+    SCAN_ID                BIGINT NOT NULL,
+    SCAN_HASH              VARCHAR(11) NOT NULL,
+    SCAN_TYPE              VARCHAR(3),
+    SCAN_COUNT             INT,
+    MACHINE_TYPE           VARCHAR(10),
+    SEQUENCE_CODE          VARCHAR(5),
+    LOAD_DATE              TIMESTAMP,
+    PRIMARY KEY (SCAN_ID)    
+)
+
+-------------------------------------------------
+
+# SHARDING
+CREATE TABLE SCANS
+(
+    SCAN_ID                BIGINT NOT NULL,
+    SCAN_HASH              VARCHAR(11) NOT NULL,
+    SCAN_TYPE              VARCHAR(3),
+    SCAN_COUNT             INT,
+    MACHINE_TYPE           VARCHAR(10),
+    SEQUENCE_CODE          VARCHAR(5),
+    LOAD_DATE              TIMESTAMP,
+    SHARD KEY (SCAN_HASH),
+    PRIMARY KEY (SCAN_ID, SCAN_HASH)	
+)
+
+-------------------------------------------------
+
+# INDEXING
+CREATE TABLE SCANS
+(
+    SCAN_ID                BIGINT NOT NULL,
+    SCAN_HASH              VARCHAR(11) NOT NULL,
+    SCAN_TYPE              VARCHAR(3),
+    SCAN_COUNT             INT,
+    MACHINE_TYPE           VARCHAR(10),
+    SEQUENCE_CODE          VARCHAR(5),
+    LOAD_DATE              TIMESTAMP,
+    SHARD KEY (SCAN_COUNT),
+    PRIMARY KEY (SCAN_ID, SCAN_COUNT)    
+)
+'''

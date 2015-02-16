@@ -18,55 +18,26 @@ public class SQLBenchmark {
     private static PreparedStatement pStmt;
     private static int num;
     public static Connection conn = null;
-    private static int iterations = 3;
-    private static int total = 6801076;
+    private static int iterations = 15;
+    private static String localValuesPath = "/home/ubuntu/workspace/Interviews/src/memSQL/sql-benchmark/values.txt";
+    private static String clusterValuesPath = "/home/ubuntu/code/src/memSQL/sql-benchmark/values.txt";
 
     private static void printResult(String name, long ms, long bytes, int i) {
         System.out.println(
                 name + ": (" + iterations + ")\n\t\t" +
-                (ms / (1000.0*i)) + " seconds per Full-Table Scan \n\t\t" +
+                (ms / (1000.0*i)) + " seconds per Full-Table Operation \n\t\t" +
                 (bytes / 1000.0) + " MBs used \n\t\t" +
                 Math.round(1000.0 * i / ms) + " transactions/second \n\t\t" 
         );
     }
 
-    private static int insertManuel (ArrayList<String> queries) throws Exception {
-        // Declarations
-        int rowCount=0;
-        Statement stmt = null;
-
-        // Initialize connector
-        stmt = conn.createStatement();
-        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
-
-        // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
-
-        for (String query : queries)
-            stmt.executeUpdate(query);
-
-        // Stop Timer
-        stmt.close();
-        endTime = System.currentTimeMillis();
-
-        // Display Output
-        SQLBenchmark.printResult(
-            "Insert",
-            (endTime-startTime),
-            (runtime.totalMemory()-runtime.freeMemory()-startTotalMem),
-           rowCount 
-        );   
-        return rowCount;  
-    }
-
+    // This is a Bulk insert using LOAD DATA INFILE, to see a 'manuel' INSERT, look in dataGenerator.py
     public static int insert() throws Exception {
         // Declarations
         int rowCount=0;
         Statement stmt = null;
         stmt = conn.createStatement();
-        String loadFile = "LOAD DATA INFILE \'/home/ubuntu/code/memSQL/sql-benchmark/queries.txt\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\';";
-
+        String loadFile = "LOAD DATA LOCAL INFILE \'" +clusterValuesPath+"\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\';";
         stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
         // Initialize Timer
@@ -145,8 +116,7 @@ public class SQLBenchmark {
         return iterations;
     }
 
-
-    public static int selects() throws Exception {
+    public static int select() throws Exception {
         // Declarations
         String sql = "SELECT * FROM SCANS";
 
@@ -214,56 +184,43 @@ public class SQLBenchmark {
         );  
     }
 
-    private static ArrayList<String> readQueries(String filename) throws Exception {
-        ArrayList<String> result = new ArrayList<String>();
-        BufferedReader br = new BufferedReader(new FileReader(filename));
-        String line;
-        while ((line = br.readLine()) != null) {
-            // process the line.
-            result.add(line);
+    private static void close(Statement stmt, ResultSet rs, Connection conn) {
+        if (rs != null) {
+            try {
+                rs.close();
+            } catch (SQLException iDontCare) {
+                System.out.println("Error closing ResultSet");
+            } finally {
+                rs = null;
+            }
         }
-        br.close();
-        return result;
+
+        if (stmt != null) {
+            try {
+                stmt.close();
+            } catch (SQLException iDontCare) {
+                System.out.println("Error closing Statement");
+            } finally {
+                stmt = null;
+            }
+        }
+
+        try {
+            conn.close();
+        } catch(Exception iDontCare) {
+            System.out.println("Error closing Connection");
+        } finally {
+            conn = null;
+        }
     }
 
     /**
      * @param args the command line arguments
      */
 	public static void main(String[] args) {
-        // Declarations
-        ArrayList<String> queries = null;
-
-        // Initialize JDBC connector
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            Class.forName("com.mysql.jdbc.Driver").newInstance();
-        } catch (Exception ex) {
-            System.err.println("Loading MySQL-Driver failed!");
-        }
 
         // Connect to database
-        try {
-            conn = DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/MemEx?user=root&password=");
-        } catch (SQLException ex) {
-            if(conn != null) {
-                try {
-                    conn.close();
-                } catch(Exception iDontCare) {
-                } finally {
-                    conn = null;
-                }
-            }
-            System.out.println("SQLException: " + ex.getMessage());
-            System.out.println("SQLState: " + ex.getSQLState());
-            System.exit(1);
-        }
-
-        // Read in Queries
-        try {
-            queries = readQueries("queries.txt");
-        } catch (Exception e) {
-            System.out.println("Error reading from queries.txt");
-        }
+        conn = DBConn.getInstance().getConnection();
 
         // Run the BenchMarks here
         try {
@@ -271,49 +228,22 @@ public class SQLBenchmark {
             stmt.setPoolable(true);
 
             // Benchmarks
-            insert();
-    	    //insertManuel(queries);
+            //insert();
     	    selectDistinct("SCAN_HASH");
             selectDistinct("SCAN_ID");
-    	    selects();
+    	    select();
     	    selectWhere("SCAN_HASH=1000000");
     	    selectWhere("SCAN_ID=1000000");
-            selectWhere("SCAN_HASH=25000000");
-            selectWhere("SCAN_ID=25000000");
-            selectWhere("SCAN_HASH=40000000");
-            selectWhere("SCAN_ID=40000000");
+            selectWhere("SCAN_HASH<25000000");
+            selectWhere("SCAN_ID<25000000");
+            selectWhere("SCAN_HASH>40000000");
+            selectWhere("SCAN_ID>40000000");
     	    mixed();
-
         } catch (Exception e) {
+            System.out.println("Error w/Benchmarks");
             System.err.println(e);
         } finally {
-            if (rs != null) {
-                try {
-                    rs.close();
-                } catch (SQLException iDontCare) {
-                    System.out.println("Error closing ResultSet");
-                } finally {
-                    rs = null;
-                }
-            }
-
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (SQLException iDontCare) {
-                    System.out.println("Error closing Statement");
-                } finally {
-                    stmt = null;
-                }
-            }
-
-            try {
-                conn.close();
-            } catch(Exception iDontCare) {
-                System.out.println("Error closing Connection");
-            } finally {
-                conn = null;
-            }
+            close(stmt, rs, conn);
         }
     }   
 }

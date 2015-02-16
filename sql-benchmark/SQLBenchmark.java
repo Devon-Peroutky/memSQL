@@ -22,6 +22,7 @@ public class SQLBenchmark {
     private static String localValuesPath = "/home/ubuntu/workspace/Interviews/src/memSQL/sql-benchmark/values.txt";
     private static String clusterValuesPath = "/home/ubuntu/code/src/memSQL/sql-benchmark/values.txt";
 
+    // Helper Methods
     private static void printResult(String name, long ms, long bytes, int i) {
         System.out.println(
                 name + ": (" + iterations + ")\n\t\t" +
@@ -29,6 +30,24 @@ public class SQLBenchmark {
                 (bytes / 1000.0) + " MBs used \n\t\t" +
                 Math.round(1000.0 * i / ms) + " transactions/second \n\t\t" 
         );
+    }
+
+    private static void startTimer() {
+        // Initialize Timer
+        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
+        startTime = System.currentTimeMillis();
+    }
+
+    private static void endTimer() throws Exception{
+        endTime = System.currentTimeMillis();
+    }
+
+    private static int getNumTransactions() throws Exception{
+        // Get number of records written
+        stmt = conn.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM SCANS");
+        rs.next();
+        return rs.getInt(1);
     }
 
     // This is a Bulk insert using LOAD DATA INFILE, to see a 'manuel' INSERT, look in dataGenerator.py
@@ -41,23 +60,14 @@ public class SQLBenchmark {
         String loadFile = "LOAD DATA LOCAL INFILE \'" +clusterValuesPath+"\' INTO TABLE SCANS FIELDS TERMINATED BY \',\' ENCLOSED BY \'\"\' LINES TERMINATED BY \'\n\';";
         stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
-        // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
-
-        // Execute
+        // Benchmark
+        startTimer();
         stmt.executeUpdate(loadFile);
+        endTimer();
+
+        // Get number of rows Inserted
+        rowCount = getNumTransactions();
     
-        // Stop Timer
-        stmt.close();
-        endTime = System.currentTimeMillis();
-
-        // Get number of records written
-        stmt = conn.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM SCANS");
-        rs.next();
-        rowCount = rs.getInt(1);
-
         // Display Output
         SQLBenchmark.printResult(
             "Insert",
@@ -73,15 +83,14 @@ public class SQLBenchmark {
         String sql = "SELECT * FROM SCANS WHERE " + where;
 
         // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
+        startTimer();
 
         // Execute
         for (int i=0; i<iterations; i++) 
             stmt.executeQuery(sql);
 
         // Stop Timer
-        endTime = System.currentTimeMillis();
+        endTimer();
 
         // Display Results
         SQLBenchmark.printResult(
@@ -97,15 +106,14 @@ public class SQLBenchmark {
         String sql = "SELECT COUNT(DISTINCT "+parameter+") FROM SCANS";
 
         // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
+        startTimer();
 
         // Execute
         for (int i=0; i<iterations; i++)
             stmt.executeQuery(sql);
 
         // Stop Timer
-        endTime = System.currentTimeMillis();
+        endTimer();
 
         // Display Results
         SQLBenchmark.printResult(
@@ -122,15 +130,14 @@ public class SQLBenchmark {
         String sql = "SELECT * FROM SCANS";
 
         // Initialize Timer
-        startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-        startTime = System.currentTimeMillis();
+        startTimer();
 
         // Execute
         for (int i=0; i<iterations; i++) 
             stmt.executeQuery(sql);
 
         // Stop Timer
-        endTime = System.currentTimeMillis();
+        endTimer();
 
         // Display Results
         SQLBenchmark.printResult(
@@ -161,15 +168,14 @@ public class SQLBenchmark {
 	        stmt.executeUpdate("DELETE FROM SCANS WHERE SCAN_COUNT<8");
 
 	        // Initialize Timer
-        	startTotalMem = runtime.totalMemory()-runtime.freeMemory();
-	        startTime = System.currentTimeMillis();
+            startTimer();
 
     		// Start the INSERT and QUERY thread
     		t1.start();
             t2.start();
 
 	        // Stop Timer
-        	endTime = System.currentTimeMillis();
+        	endTimer();
             totalTime+=endTime-startTime;	
             transactions+=t1.transactions;
             transactions+=t2.transactions;
